@@ -1,1 +1,16 @@
+Active Directory automation w/ Powershell
 
+We could make each user a "member of" a group manually, but problems will arise if you have hundreds, or thousands of users that you need to make changes to.
+How to solve this problem? Automation through scripting!
+
+$ = declare a variable
+| (pipe symbol) = take output of $users, and pipe it into another command
+
+# Get attributes of a specific user
+$findUser = Get-ADUser -Identity [userName]  
+# add "-Properties *" to find all attributes of user, or "-Properties [property]" for specific property
+
+# Get all AD users and print out to grid view
+import-module ActiveDirectory
+$users = Get-ADUser -Filter
+Write-Host ($users | Out-GridView)
