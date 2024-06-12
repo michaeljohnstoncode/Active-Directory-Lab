@@ -1,0 +1,46 @@
+Create domain controller (Windows Server) -> settings, network -> adapter 2, add Internal Network
+- we want 2 nics. one dedicated for internet (NAT), one dedicated for internal VM network
+Load up server, click devices -> insert guest additions cd image. Restart (QoL for resolution changing)
+Next, rename networks in adapter options. Rename Internet and Internal networks. 
+Give the Internal network an IP, subnet mask, and DNS 
+(ex: 172.16.0.1, 255.255.255.0, dns: 127.0.0.1 loopback address. when we install AD, it installs DNS, server uses itself as DNS )
+Also rename , System -> rename pc -> DomainController
+
+So far we created our VM, we have our internet NIC, and internal NIC
+Next we create Active Directory Domain! 
+
+Add roles and features -> AD Domain Services. install
+Click flag -> promote server to domain controller. add new forest, create password
+Then, created an OU "Admins", and created a new user "Mike Johnston", and made the user a member of Domain Admins. Then logged into the account
+Next, we install RAS (NAT). Add roles/features, Remote Access role, and the role service Routing
+Configure "Remote Access and Routing" tool, enable, connect using internet network
+
+Next we setup a DHCP server on domain controller. Add roles&features -> add DHCP server, install
+Next, open DHCP tool, create new scope (IPv4), give name to be DHCP IP range, then assign IP range (example here: 172.16.0.100 - 200), and here we give length 24 for Subnet mask of 255.255.255.0. Lease duration depends on context, coffee shop would be short (8 hours), home lab around 7days, etc.
+Configure DHCP options: Router IP would be the domain controller server, so here 172.16.0.1. Parent domain, use domain controller as DNS server. and enter DNS ip address as the server (172.16.0.1). Activate scope. Authorize and refresh DHCP server (right click -> click). Should be green w/ checkmark!
+
+Before we create a client computer and add to domain, lets use powershell scripting to create many users for AD.
+Got a bunch of random names from this website https://1000randomnames.com/
+Extract this: This is the script & user data (names)
+https://www.youtube.com/redirect?event=video_description&redir_token=QUFFLUhqbUhLdk8xWDNpX0pwYUktS3hFbXJ3SElvNUZRd3xBQ3Jtc0trdzR2ejE3cklJb3pvOFg2bjlmQmtBMkpDYWJEMWEyZjdYd0U0dnZOX09TZjBaQ2hNa2owVkx3Nm05Ql9FQ1l6Tjhza2syMVJ2OHFPVkhsRnRSS0ZiZzhnZnc1QXN2QlY1ZFV1UGpldUZHN1pObmVibw&q=https%3A%2F%2Fgithub.com%2Fjoshmadakor1%2FAD_PS%2Farchive%2Frefs%2Fheads%2Fmaster.zip&v=MHsI8hJmggI
+
+Then, run Powershell ISE as admin. Open the script in this PS ISE
+In order to get around security feature to run script, "not digitally signed"
+run "Set-ExecutionPolicy Unrestricted" (homelab purpose only)
+then, cd to "cd C:\Users\a-mjohnston\Desktop\AD_PS-master
+and click play
+
+Then, create a VM client, with Windows 10 ISO. In settings, network -> select internal
+Load up ISO, setup windows, "connect w limited internet", do local user no password
+cmd -> ipconfig ... no default gateway? do this:
+Domain controller (server) -> DHCP -> IPv4, Server options, Configure options, Router -> use server IP (172.16.0.1)
+Then restart DHCP server (rightclick , tasks restart)
+
+Go back to client, cmd -> ipconfig /renew. gives you default gateway of server IP. Test connectivity by pinging google (ping 8.8.8.8). This means its properly NATing and forwarding requests, and receiving.
+Next rename PC. right click start -> system -> rename (advanced) -> Change... Client1 and add domain (mydomain.com)
+change using admin account. Restart client pc
+Check domain controller -> DHCP -> Scope -> Leases. Did it lease an IP to the client?
+Check AD Users & Computers -> domain -> Computers. Do you see the client computer?
+In creating this client pc, any one of those users we created can be used to log into the computer!
+
+Here, we created a mini corporate network, and we went through account creation process. Imagine the client pc as a corporate laptop, and any user can log onto the laptop if they have an account!
