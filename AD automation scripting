@@ -14,3 +14,7 @@ $findUser = Get-ADUser -Identity [userName]
 import-module ActiveDirectory
 $users = Get-ADUser -Filter
 Write-Host ($users | Out-GridView)
+
+#Delete all users from a specified OU
+$usersToDelete = Get-ADUser -SearchBase "OU=_USERS,DC=mydomain,DC=com" -Filter *
+$usersToDelete | Remove-ADUser -Confirm:$false
